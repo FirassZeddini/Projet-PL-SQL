@@ -4,7 +4,7 @@ CREATE OR REPLACE PACKAGE pkg_patient AS
     ex_long_tel EXCEPTION;
     ex_nom_null EXCEPTION;
     ex_prenom_null EXCEPTION;
-
+    ex_date EXCEPTION;
     PROCEDURE ajouter_patient(id IN patient.idPatient%type,
         nom_p IN patient.nom%type, 
         prenom_p IN patient.prenom%type, 
@@ -50,10 +50,15 @@ CREATE OR REPLACE PACKAGE BODY pkg_patient AS
                 RAISE ex_prenom_null;
             END IF;
 
+            IF dateNais_p >= SYSDATE THEN
+                RAISE ex_date;
+            END IF;
             INSERT INTO Patient VALUES (id, nom_p, prenom_p, dateNais_p, adresse_p, tel_p);
             COMMIT;
-            DBMS_OUTPUT.PUT_LINE('La patient '||id||' a ete ajoute avec succes');
+            DBMS_OUTPUT.PUT_LINE('La patient a ete ajoute avec succes');
         EXCEPTION
+            WHEN ex_date THEN
+                DBMS_OUTPUT.PUT_LINE('Date de naissance invalide');
             WHEN ex_patient_existe THEN
                 DBMS_OUTPUT.PUT_LINE('Le Patient '||id||' deja existant');
             WHEN ex_long_tel THEN
@@ -65,7 +70,7 @@ CREATE OR REPLACE PACKAGE BODY pkg_patient AS
             WHEN OTHERS THEN
                 DBMS_OUTPUT.PUT_LINE('Erreur inattendu');
                 ROLLBACK;
-        END;
+        END ajouter_patient;
 
 PROCEDURE modifier_patient(id_p IN patient.idPatient%type,
         nom_p IN patient.nom%type, 
@@ -111,7 +116,7 @@ PROCEDURE modifier_patient(id_p IN patient.idPatient%type,
             WHEN OTHERS THEN
                 DBMS_OUTPUT.PUT_LINE('Erreur inattendu');
                 ROLLBACK;
-        END;
+        END modifier_patient;
 
 PROCEDURE supprimer_patient(id_p IN patient.idPatient%type) IS
     nb_p INTEGER;
@@ -129,7 +134,7 @@ PROCEDURE supprimer_patient(id_p IN patient.idPatient%type) IS
         WHEN OTHERS THEN
             DBMS_OUTPUT.PUT_LINE('Erreur inattendu');
             ROLLBACK;
-    END;
+    END supprimer_patient;
 
 PROCEDURE afficher_patient(id_p IN patient.idPatient%type) IS
     rec Patient%rowtype;
@@ -147,7 +152,8 @@ PROCEDURE afficher_patient(id_p IN patient.idPatient%type) IS
         WHEN OTHERS THEN
             DBMS_OUTPUT.PUT_LINE('Erreur inattendu');
             ROLLBACK;
-    END;
+    END afficher_patient;
+
 END pkg_patient;
 /
 
