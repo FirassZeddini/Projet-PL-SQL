@@ -20,3 +20,22 @@ IS
             RETURN 0;
     END;
 /
+
+CREATE OR REPLACE FUNCTION cout_prescription(p_idPresc IN Ligne_Prescription.idPresc%type) RETURN INTEGER
+IS
+    cout INTEGER;
+    BEGIN
+        SELECT SUM(m.prix*l.quantite) INTO cout FROM Ligne_Prescription l
+        JOIN Medicament m ON l.idMed=m.idMed
+        WHERE l.idPresc=p_idPresc;
+        RETURN cout;
+
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            DBMS_OUTPUT.PUT_LINE('La ligne prescription '||p_idPresc||' est introuvable');
+            RETURN 0;
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Erreur inattendue: '||SQLERRM);
+            RETURN 0;
+    END;
+/

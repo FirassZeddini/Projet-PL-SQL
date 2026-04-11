@@ -68,7 +68,7 @@ CREATE OR REPLACE PACKAGE BODY pkg_patient AS
             WHEN ex_prenom_null THEN
                 DBMS_OUTPUT.PUT_LINE('Le prenom est obligatoire');
             WHEN OTHERS THEN
-                DBMS_OUTPUT.PUT_LINE('Erreur inattendu');
+                DBMS_OUTPUT.PUT_LINE('Erreur inattendue: '||SQLERRM);
                 ROLLBACK;
         END ajouter_patient;
 
@@ -114,7 +114,7 @@ PROCEDURE modifier_patient(id_p IN patient.idPatient%type,
             WHEN ex_prenom_null THEN
                 DBMS_OUTPUT.PUT_LINE('Le prenom est obligatoire');
             WHEN OTHERS THEN
-                DBMS_OUTPUT.PUT_LINE('Erreur inattendu');
+                DBMS_OUTPUT.PUT_LINE('Erreur inattendue: '||SQLERRM);
                 ROLLBACK;
         END modifier_patient;
 
@@ -132,7 +132,7 @@ PROCEDURE supprimer_patient(id_p IN patient.idPatient%type) IS
         WHEN ex_patient_introuvable THEN
             DBMS_OUTPUT.PUT_LINE('Patient '||id_p||' n''existe pas');
         WHEN OTHERS THEN
-            DBMS_OUTPUT.PUT_LINE(SQLERRM);
+            DBMS_OUTPUT.PUT_LINE('Erreur inattendue: '||SQLERRM);
             ROLLBACK;
     END supprimer_patient;
 
@@ -150,7 +150,7 @@ PROCEDURE afficher_patient(id_p IN patient.idPatient%type) IS
         WHEN NO_DATA_FOUND THEN
             DBMS_OUTPUT.PUT_LINE('Le patient '||id_p||' n''existe pas');
         WHEN OTHERS THEN
-            DBMS_OUTPUT.PUT_LINE('Erreur inattendu');
+            DBMS_OUTPUT.PUT_LINE('Erreur inattendue: '||SQLERRM);
             ROLLBACK;
     END afficher_patient;
 
