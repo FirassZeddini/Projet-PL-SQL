@@ -132,7 +132,7 @@ PROCEDURE supprimer_patient(id_p IN patient.idPatient%type) IS
         WHEN ex_patient_introuvable THEN
             DBMS_OUTPUT.PUT_LINE('Patient '||id_p||' n''existe pas');
         WHEN OTHERS THEN
-            DBMS_OUTPUT.PUT_LINE('Erreur inattendu');
+            DBMS_OUTPUT.PUT_LINE(SQLERRM);
             ROLLBACK;
     END supprimer_patient;
 

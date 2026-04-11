@@ -22,6 +22,8 @@ CREATE OR REPLACE PACKAGE pkg_medecin AS
     PROCEDURE supprimer_medecin (idM IN Medecin.idMedecin%TYPE);
     
     PROCEDURE afficher_medecin (idM IN  Medecin.idMedecin%TYPE);
+
+    PROCEDURE afficher_rdv_medecin (p_idMedecin IN Medecin.idMedecin%TYPE);
 END pkg_medecin;
 /
 
@@ -146,6 +148,31 @@ CREATE OR REPLACE PACKAGE BODY pkg_medecin AS
         WHEN NO_DATA_FOUND THEN
             DBMS_OUTPUT.PUT_LINE('Medecin inexistant');
     END afficher_medecin;
+--- CURSEUR PARAMETRE---
+    PROCEDURE afficher_rdv_medecin (
+    p_idMedecin Medecin.idMedecin%TYPE
+    ) IS
+        CURSOR cur_rdv (p_idMedecin Medecin.idMedecin%TYPE) IS 
+            SELECT r.dateRdv,r.statut,p.nom FROM RendezVous r INNER JOIN Patient p ON r.idPatient=p.idPatient  WHERE r.idMedecin=p_idMedecin ORDER BY r.dateRdv;
+        rdv cur_rdv%ROWTYPE;
+        r_count NUMBER :=0;
+    BEGIN
+        DBMS_OUTPUT.PUT_LINE('--- Rendez-vous du medecin ID: ' || p_idMedecin || ' ---');
+        OPEN cur_rdv (p_idMedecin);
+        LOOP
+            FETCH cur_rdv INTO rdv;
+            EXIT WHEN cur_rdv%NOTFOUND;
+            r_count:=r_count+1;
+            DBMS_OUTPUT.PUT_LINE('Date: '||TO_CHAR(rdv.dateRdv,'DD/MM/YYYY HH24:MI')||' - Nom Patient: '||rdv.nom||' - Statut: '||rdv.statut);
+        END LOOP;
+        CLOSE cur_rdv;
+        IF r_count=0 THEN
+            DBMS_OUTPUT.PUT_LINE('Aucun rendez-vous trouve pour ce médecin.');
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN 
+            DBMS_OUTPUT.PUT_LINE('Erreur Inattendu');
+    END afficher_rdv_medecin;
 
 END pkg_medecin;
 /

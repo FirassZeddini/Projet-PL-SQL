@@ -1,11 +1,11 @@
 CREATE OR REPLACE TRIGGER  trg_patient_del 
-BEFORE DELETE ON patient
+BEFORE DELETE ON Patient
 FOR EACH ROW 
     DECLARE
         nb NUMBER;
     BEGIN
-    SELECT COUNT(*) INTO nb FROM Hospitalisation WHERE idPatient=old.idPatient;
+    SELECT COUNT(*) INTO nb FROM Hospitalisation WHERE idPatient=:OLD.idPatient;
     IF nb>0 THEN
-        RAISE_APPLICATION_ERROR(-20010,'Patient hospitalisé, suppression interdite');
+        RAISE_APPLICATION_ERROR(-20010,'Patient hospitalise, suppression interdite');
     END IF;
     END;
