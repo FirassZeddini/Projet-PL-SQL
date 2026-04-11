@@ -12,6 +12,7 @@ INSERT INTO RendezVous VALUES (2, 2, 1, SYSDATE + 1, 'en_attente');
 INSERT INTO RendezVous VALUES (3, 1, 2, SYSDATE + 2, 'annule');
 INSERT INTO Medicament VALUES (1, 'Doliprane', 100, 5);
 INSERT INTO Medicament VALUES (2, 'Aspirine', 50, 3);
+INSERT INTO Medicament VALUES (3, 'Paracetamol', 0, 2.5);
 INSERT INTO Hospitalisation VALUES (1, 1, 1, SYSDATE-5, SYSDATE);
 INSERT INTO Hospitalisation VALUES (2, 2, 1, SYSDATE-3, SYSDATE);
 INSERT INTO Hospitalisation VALUES (3, 1, 2, SYSDATE-2, SYSDATE);
