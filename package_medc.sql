@@ -53,7 +53,7 @@ CREATE OR REPLACE PACKAGE BODY pkg_medic AS
             WHEN ex_null THEN
                 DBMS_OUTPUT.PUT_LINE('tous les champs sont obligatoires');
             WHEN OTHERS THEN
-                DBMS_OUTPUT.PUT_LINE('Erreur inattendu');
+                DBMS_OUTPUT.PUT_LINE('Erreur inattendu: '||SQLERRM);
                 ROLLBACK;
         END ajouter_medicament;
 

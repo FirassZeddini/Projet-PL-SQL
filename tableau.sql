@@ -17,6 +17,6 @@ BEGIN
     END LOOP;
 EXCEPTION
     WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE(SQLERRM);
-END;
+        DBMS_OUTPUT.PUT_LINE('Erreur inattendu: '||SQLERRM);
+END medicaments_rupture;
 /

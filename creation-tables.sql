@@ -40,9 +40,9 @@ CREATE TABLE RendezVous(
     statut VARCHAR2(20),
     CONSTRAINT pk_rendezvous PRIMARY KEY (idRdv),
     CONSTRAINT fk_rendezvous_patient 
-    FOREIGN KEY (idPatient) REFERENCES Patient(idPatient),
+    FOREIGN KEY (idPatient) REFERENCES Patient(idPatient) ON DELETE CASCADE,
     CONSTRAINT fk_rendezvous_medecin
-    FOREIGN KEY (idMedecin) REFERENCES Medecin(idMedecin)
+    FOREIGN KEY (idMedecin) REFERENCES Medecin(idMedecin) 
 );
 
 -- Création de la table Hospitalisation
@@ -85,7 +85,7 @@ CREATE TABLE Prescription(
     FOREIGN KEY (idMedecin) REFERENCES Medecin(idMedecin)
 );
 
--- Creéation de la table Ligne_Prescription
+-- Création de la table Ligne_Prescription
 CREATE TABLE Ligne_Prescription(
     idPresc NUMBER,
     idMed NUMBER,

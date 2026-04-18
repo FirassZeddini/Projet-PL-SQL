@@ -176,7 +176,7 @@ PROCEDURE afficher_rendezVous(
         DBMS_OUTPUT.PUT_LINE('Nom patient: '||rec.nom_p);
         DBMS_OUTPUT.PUT_LINE('Prenom patient: '||rec.prenom_p);
         DBMS_OUTPUT.PUT_LINE('Nom medecin: '||rec.nom_m);
-        DBMS_OUTPUT.PUT_LINE('Date rendez-vous: '||rec.date_rdv);
+        DBMS_OUTPUT.PUT_LINE('Date rendez-vous: '||TO_CHAR(rec.dateRdv, 'DD/MM/YYYY à HH24:MI'));
         DBMS_OUTPUT.PUT_LINE('Statut: '||rec.statut_rdv);
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
