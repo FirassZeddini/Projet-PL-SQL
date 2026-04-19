@@ -32,11 +32,14 @@ CREATE OR REPLACE PACKAGE pkg_hopital AS
     ex_rdv_existe EXCEPTION;
     ex_rdv_introuvable EXCEPTION;
     ex_date_invalide EXCEPTION;
+    ex_rdv_conflit EXCEPTION;
 
     ex_stock_insuffisant EXCEPTION;
     ex_medecin_introuvable EXCEPTION;
     ex_presc_existe EXCEPTION;
 
+    ex_hosp_vide EXCEPTION;
+    ex_capacite_depasse EXCEPTION;
 
     -- =============== Procédures Patient ===============
 
@@ -296,7 +299,12 @@ PROCEDURE ajouter_medecin (
         idS IN Medecin.idService%TYPE
         ) IS
         nb_s NUMBER;
+        nb NUMBER;
         BEGIN
+            SELECT COUNT(*) INTO nb FROM Medecin WHERE idMedecin=idM;
+            IF nb > 0 THEN
+                RAISE ex_existe;
+            END IF;
             SELECT COUNT(*) INTO nb_s FROM Service WHERE idService=idS;
             IF nb_s = 0 THEN 
                 RAISE ex_ser;
@@ -313,11 +321,11 @@ PROCEDURE ajouter_medecin (
 
             INSERT INTO Medecin VALUES (idM,nomM,Specialite,salaire,idS);
             COMMIT;
-            DBMS_OUTPUT.PUT_LINE('Medecin ajoute');
+            DBMS_OUTPUT.PUT_LINE('Le Medecin '||idM||' a ete ajoute avec succes');
 
         EXCEPTION
-            WHEN DUP_VAL_ON_INDEX THEN
-                DBMS_OUTPUT.PUT_LINE('ID deja existant');
+            WHEN ex_existe THEN
+                DBMS_OUTPUT.PUT_LINE('Le Medecin '||idM||' existe deja ');
             WHEN ex_ser THEN
                 DBMS_OUTPUT.PUT_LINE('Service inexistant');
             WHEN ex_sal THEN
@@ -325,7 +333,7 @@ PROCEDURE ajouter_medecin (
             WHEN ex_null THEN
                 DBMS_OUTPUT.PUT_LINE('tous les champs sont obligatoires');
             WHEN OTHERS THEN
-                DBMS_OUTPUT.PUT_LINE('Erreur inattendu: '||SQLERRM);
+                DBMS_OUTPUT.PUT_LINE('Erreur inattendue: '||SQLERRM);
                 ROLLBACK;
         END ajouter_medecin;
 
@@ -363,7 +371,7 @@ PROCEDURE ajouter_medecin (
                 idService=idS
                 WHERE idMedecin=idM;
             COMMIT;
-            DBMS_OUTPUT.PUT_LINE('Medecin modifie');
+            DBMS_OUTPUT.PUT_LINE('Le Medecin '||idM||' a ete modifie avec succes');
 
         EXCEPTION
             WHEN DUP_VAL_ON_INDEX THEN
@@ -377,7 +385,7 @@ PROCEDURE ajouter_medecin (
             WHEN ex_null THEN
                 DBMS_OUTPUT.PUT_LINE('tous les champs sont obligatoires');
             WHEN OTHERS THEN
-                DBMS_OUTPUT.PUT_LINE('Erreur inattendu');
+                DBMS_OUTPUT.PUT_LINE('Erreur inattendue '||SQLERRM);
                 ROLLBACK;
         END modifier_medecin;
 
@@ -388,14 +396,14 @@ PROCEDURE ajouter_medecin (
         IF nb_m = 0 THEN
             RAISE ex_introuvable;
         END IF;
-        DELETE from Medecin WHERE idMedecin=idM;
+        DELETE FROM Medecin WHERE idMedecin=idM;
         COMMIT;
-        DBMS_OUTPUT.PUT_LINE('Le Medecin est supprime avec succes');
+        DBMS_OUTPUT.PUT_LINE('Le Medecin '||idM||' a ete supprime avec succes');
     EXCEPTION
         WHEN ex_introuvable THEN
             DBMS_OUTPUT.PUT_LINE('ID introuvable');
         WHEN OTHERS THEN
-            DBMS_OUTPUT.PUT_LINE('Erreur inattendu');
+            DBMS_OUTPUT.PUT_LINE('Erreur inattendue '||SQLERRM);
             ROLLBACK;
     END supprimer_medecin;
 
@@ -406,7 +414,9 @@ PROCEDURE ajouter_medecin (
         DBMS_OUTPUT.PUT_LINE('Nom de Medecin: '||m.nom||' - Specialite: '||m.specialite||' - Salaire: '||m.salaire);
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
-            DBMS_OUTPUT.PUT_LINE('Medecin inexistant');
+            DBMS_OUTPUT.PUT_LINE('Le Medecin '||idM||'n existe pas');
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Erreur inattendue '||SQLERRM);
     END afficher_medecin;
 
 --- CURSEUR PARAMETRE---
@@ -433,7 +443,7 @@ PROCEDURE ajouter_medecin (
         END IF;
     EXCEPTION
         WHEN OTHERS THEN 
-            DBMS_OUTPUT.PUT_LINE('Erreur Inattendu');
+            DBMS_OUTPUT.PUT_LINE('Erreur Inattendu '||SQLERRM);
     END afficher_rdv_medecin;
 
 -- =================== Procédures RDV =================
@@ -614,13 +624,13 @@ PROCEDURE ajouter_medicament (
 
         EXCEPTION
             WHEN DUP_VAL_ON_INDEX THEN
-                DBMS_OUTPUT.PUT_LINE('ID deja existant');
+                DBMS_OUTPUT.PUT_LINE('Le Medicament '||idM||' deja existe');
             WHEN ex_stk THEN
                 DBMS_OUTPUT.PUT_LINE('stock doit etre positive');
             WHEN ex_pr THEN
                 DBMS_OUTPUT.PUT_LINE('prix doit etre positive');
             WHEN ex_null THEN
-                DBMS_OUTPUT.PUT_LINE('tous les champs sont obligatoires');
+                DBMS_OUTPUT.PUT_LINE('Tous les champs sont obligatoires');
             WHEN OTHERS THEN
                 DBMS_OUTPUT.PUT_LINE('Erreur inattendu: '||SQLERRM);
                 ROLLBACK;
@@ -658,15 +668,15 @@ PROCEDURE ajouter_medicament (
 
         EXCEPTION
             WHEN ex_introuvable THEN
-                DBMS_OUTPUT.PUT_LINE('Medicament inexistant');
+                DBMS_OUTPUT.PUT_LINE('le Medicament '||idM||' n existe pas');
             WHEN ex_stk THEN
                 DBMS_OUTPUT.PUT_LINE('stock doit etre positive');
             WHEN ex_pr THEN
                 DBMS_OUTPUT.PUT_LINE('prix doit etre positive');
             WHEN ex_null THEN
-                DBMS_OUTPUT.PUT_LINE('tous les champs sont obligatoires');
+                DBMS_OUTPUT.PUT_LINE('Tous les champs sont obligatoires');
             WHEN OTHERS THEN
-                DBMS_OUTPUT.PUT_LINE('Erreur inattendu');
+                DBMS_OUTPUT.PUT_LINE('Erreur inattendue '||SQLERRM);
                 ROLLBACK;
         END modifier_medicament;
 
@@ -679,12 +689,12 @@ PROCEDURE ajouter_medicament (
         END IF;
         DELETE from Medicament WHERE idMed=idM;
         COMMIT;
-        DBMS_OUTPUT.PUT_LINE('Medicament supprime avec succes');
+        DBMS_OUTPUT.PUT_LINE('Le Medicament '||idM||' a ete supprime avec succes');
     EXCEPTION
         WHEN ex_introuvable THEN
             DBMS_OUTPUT.PUT_LINE('ID introuvable');
         WHEN OTHERS THEN
-            DBMS_OUTPUT.PUT_LINE('Erreur inattendu');
+            DBMS_OUTPUT.PUT_LINE('Erreur inattendue '||SQLERRM);
             ROLLBACK;
     END supprimer_medicament;
 
@@ -695,7 +705,9 @@ PROCEDURE ajouter_medicament (
         DBMS_OUTPUT.PUT_LINE('Nom de Medicament: '||m.nom||' - Stock: '||m.stock||' - Prix: '||m.prix);
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
-            DBMS_OUTPUT.PUT_LINE('Medicament inexistant');
+            DBMS_OUTPUT.PUT_LINE('Medicament '||idM||' n existe pas');
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Erreur inattendue '||SQLERRM);
     END afficher_medicament;
 
 
@@ -709,20 +721,14 @@ IS
     INNER JOIN Patient p ON p.idPatient=h.idPatient
     INNER JOIN Service s ON s.idService=h.idService;
     compteur INTEGER :=0;
-    trouve BOOLEAN := FALSE;
-    ex_hosp_vide EXCEPTION;
 
 BEGIN
     FOR rec IN cur LOOP
-        trouve:=TRUE;
+    DBMS_OUTPUT.PUT_LINE('============Hospitalisation=============');
         compteur:=compteur+1;
-        DBMS_OUTPUT.PUT_LINE('============Hospitalisation '||compteur||'============');
-        DBMS_OUTPUT.PUT_LINE('Nom patient: '||rec.nom);
-        DBMS_OUTPUT.PUT_LINE('Prenom patient: '||rec.prenom);
-        DBMS_OUTPUT.PUT_LINE('Nom service: '||rec.nomService);
-        DBMS_OUTPUT.PUT_LINE('Duree de sejour: '||rec.duree||' jours');
+        DBMS_OUTPUT.PUT_LINE('N°'||compteur||': Nom patient: '||rec.nom|| '-Prenom patient: '||rec.prenom||'-Nom service: '||rec.nomService||-'Duree de sejour: '||rec.duree||' jours');
     END LOOP;
-    IF NOT trouve THEN
+    IF compteur = 0 THEN
         RAISE ex_hosp_vide;
     END IF;
 EXCEPTION
@@ -783,7 +789,7 @@ EXCEPTION
         DBMS_OUTPUT.PUT_LINE('Stock insuffisant pour medicament '||id_medic);
     WHEN ex_medecin_introuvable THEN
         ROLLBACK;
-        DBMS_OUTPUT.PUT_LINE('Médecin ID '||id_medecin||' introuvable.');
+        DBMS_OUTPUT.PUT_LINE('Medecin ID '||id_medecin||' introuvable.');
     WHEN ex_patient_introuvable THEN
         ROLLBACK;
         DBMS_OUTPUT.PUT_LINE('Patient ID '||id_patient||' introuvable.');
@@ -815,48 +821,78 @@ BEGIN
     END LOOP;
 EXCEPTION
     WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Erreur inattendu: '||SQLERRM);
+        DBMS_OUTPUT.PUT_LINE('Erreur inattendue: '||SQLERRM);
 END medicaments_rupture;
 
 -- =================FONCTIONS=============
 FUNCTION nb_patients_service (p_idService IN Service.idService%TYPE)  RETURN NUMBER 
 IS
     nb_p NUMBER :=0 ;
+    nb NUMBER :=0;
     BEGIN
+        SELECT count(*) INTO nb  FROM Service WHERE idService=p_idService;
+        IF nb = 0 THEN
+            RAISE ex_introuvable;
+        END IF;
         SELECT count(*) INTO nb_p FROM Hospitalisation WHERE idService=p_idService;
         RETURN nb_p;
     EXCEPTION
+        WHEN ex_introuvable THEN
+            DBMS_OUTPUT.PUT_LINE('Service '||p_idService||' n existe pas');
         WHEN NO_DATA_FOUND THEN
             RETURN 0;
+        WHEN TOO_MANY_ROWS THEN
+            DBMS_OUTPUT.PUT_LINE('Erreur : plusieurs lignes ont ete retournees ');
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Erreur inattendue '||SQLERRM);
     END nb_patients_service;
 
 FUNCTION total_medicaments_patient (p_idPatient IN Patient.idPatient%TYPE)  RETURN NUMBER 
 IS
     nb_med NUMBER :=0 ;
+    nb NUMBER :=0;
     BEGIN
+        SELECT count(*) INTO nb FROM Patient WHERE idPatient=p_idPatient;
+        IF nb = 0 THEN
+            RAISE ex_introuvable;
+        END IF;
         SELECT SUM(lp.quantite) INTO nb_med FROM Prescription p INNER JOIN Ligne_Prescription lp on p.idPresc=lp.idPresc WHERE idPatient=p_idPatient;
         RETURN nb_med;
     EXCEPTION
+        WHEN ex_introuvable THEN
+            DBMS_OUTPUT.PUT_LINE('Patient '||p_idPatient||' n existe pas');
         WHEN NO_DATA_FOUND THEN
             RETURN 0;
+        WHEN TOO_MANY_ROWS THEN 
+            DBMS_OUTPUT.PUT_LINE('Erreur : plusieurs lignes ont ete retournees');
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Erreur inattendue '||SQLERRM);
     END total_medicaments_patient;
 
 FUNCTION cout_prescription(p_idPresc IN Ligne_Prescription.idPresc%type) RETURN INTEGER
 IS
     cout INTEGER;
+    nb  NUMBER :=0;
     BEGIN
+        SELECT count(*) INTO nb FROM Ligne_Prescription WHERE idPresc=p_idPresc ;
+        IF nb = 0 THEN
+            RAISE ex_introuvable;
+        END IF;    
         SELECT SUM(m.prix*l.quantite) INTO cout FROM Ligne_Prescription l
         JOIN Medicament m ON l.idMed=m.idMed
         WHERE l.idPresc=p_idPresc;
         RETURN cout;
 
     EXCEPTION
+        WHEN ex_introuvable THEN
+            DBMS_OUTPUT.PUT_LINE('Prescription '||p_idPresc||' n existe pas');
         WHEN NO_DATA_FOUND THEN
             DBMS_OUTPUT.PUT_LINE('La ligne prescription '||p_idPresc||' est introuvable');
             RETURN 0;
+        WHEN TOO_MANY_ROWS THEN
+            DBMS_OUTPUT.PUT_LINE('Erreur : plusieurs lignes ont ete retournees');
         WHEN OTHERS THEN
             DBMS_OUTPUT.PUT_LINE('Erreur inattendue: '||SQLERRM);
-            RETURN 0;
     END cout_prescription;
 
 END pkg_hopital;
@@ -895,8 +931,49 @@ BEGIN
     AND statut != 'annule';
 
     IF nb_conflit > 0 THEN
-        RAISE_APPLICATION_ERROR(-20011, 'Conflit : Le medecin '||:NEW.idMedecin||' a deja un rendez-vous a cette date.');
+        RAISE_APPLICATION_ERROR(-20001,'Conflit : Le medecin '||:NEW.idMedecin||' a deja un rendez-vous a cette date.');
     END IF;
+END;
+/
+
+-- Trigger before insert hospitalisation
+
+CREATE OR REPLACE TRIGGER trg_before_insert_hosp
+BEFORE INSERT ON Hospitalisation
+FOR EACH ROW
+DECLARE
+    v_capacite Service.capacite%TYPE;
+    p_nb NUMBER;
+    nb NUMBER;
+BEGIN
+    --capacite de service
+    SELECT capacite INTO v_capacite FROM Service WHERE idService=:NEW.idService;
+    -- nbre actuel de patients dans ce service
+    p_nb := nb_patients_service(:NEW.idService);
+    IF p_nb > v_capacite THEN
+        RAISE_APPLICATION_ERROR(-20070,'Capacite du service depassee');
+    END IF;
+    -- double hospitalisation
+    SELECT COUNT(*) INTO nb FROM Hospitalisation WHERE idPatient=:NEW.idPatient AND (
+            (:NEW.dateEntree BETWEEN dateEntree AND dateSortie)
+         OR (:NEW.dateSortie BETWEEN dateEntree AND dateSortie));
+    IF nb > 0 THEN
+        RAISE_APPLICATION_ERROR(-20060,'Double hospitalisation interdite pour ce patient');
+    END IF;
+END;
+/
+
+-- Trigger after update prescription
+
+CREATE OR REPLACE TRIGGER trg_after_update_presc
+AFTER INSERT OR UPDATE ON Prescription
+FOR EACH ROW
+BEGIN
+    FOR rec IN (SELECT idMed,quantite FROM Ligne_Prescription WHERE idPresc=:NEW.idPresc) LOOP
+        UPDATE Medicament 
+        SET stock=stock-rec.quantite
+        WHERE idMed=rec.idMed;
+    END LOOP;
 END;
 /
 
@@ -907,5 +984,15 @@ AFTER CREATE OR ALTER OR DROP
 ON SCHEMA
 BEGIN
     DBMS_OUTPUT.PUT_LINE('Une operation DDL detectee: '||ORA_SYSEVENT||' sur l''objet: '||ORA_DICT_OBJ_NAME);
+END;
+/
+
+-- Trigger d'instance
+
+CREATE OR REPLACE TRIGGER trg_logon_user
+AFTER LOGON ON DATABASE
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('Bienvenue ' || USER ||' - Connexion réussie à la base de données.'
+    );
 END;
 /

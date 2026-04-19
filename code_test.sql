@@ -34,6 +34,9 @@ EXEC pkg_hopital.modifier_patient(999, 'X', 'X', DATE '2000-01-01', 'X', '123456
 -- Supprimer patient (on supprimera le 3 qui n'est pas hospitalise)
 EXEC pkg_hopital.supprimer_patient(3);
 
+-- Supprimer patient hospitalise
+EXEC pkg_hopital.supprimer_patient(2);
+
 -- Supprimer patient inexistant
 EXEC pkg_hopital.supprimer_patient(999);
 
