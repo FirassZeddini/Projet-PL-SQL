@@ -781,7 +781,7 @@ BEGIN
         SET stock=stock-meds(i).qte WHERE idMed=meds(i).idMed;
     END LOOP;
     COMMIT;
-    DBMS_OUTPUT.PUT_LINE('Prescription N°'||id_presc||' enregistree avec succes');
+    DBMS_OUTPUT.PUT_LINE('Prescription N: '||id_presc||' enregistree avec succes');
     
 EXCEPTION
     WHEN ex_stock_insuffisant THEN
@@ -839,6 +839,7 @@ IS
     EXCEPTION
         WHEN ex_introuvable THEN
             DBMS_OUTPUT.PUT_LINE('Service '||p_idService||' n existe pas');
+            RETURN 0;
         WHEN NO_DATA_FOUND THEN
             RETURN 0;
         WHEN TOO_MANY_ROWS THEN
@@ -858,11 +859,12 @@ IS
         IF nb = 0 THEN
             RAISE ex_introuvable;
         END IF;
-        SELECT SUM(lp.quantite) INTO nb_med FROM Prescription p INNER JOIN Ligne_Prescription lp on p.idPresc=lp.idPresc WHERE idPatient=p_idPatient;
+        SELECT SUM(lp.quantite) INTO nb_med FROM Prescription p INNER JOIN Ligne_Prescription lp on p.idPresc=lp.idPresc WHERE p.idPatient=p_idPatient;
         RETURN nb_med;
     EXCEPTION
         WHEN ex_introuvable THEN
             DBMS_OUTPUT.PUT_LINE('Patient '||p_idPatient||' n existe pas');
+            RETURN 0;
         WHEN NO_DATA_FOUND THEN
             RETURN 0;
         WHEN TOO_MANY_ROWS THEN 
@@ -875,7 +877,7 @@ IS
 
 FUNCTION cout_prescription(p_idPresc IN Ligne_Prescription.idPresc%type) RETURN INTEGER
 IS
-    cout INTEGER;
+    cout INTEGER:=0;
     nb  NUMBER :=0;
     BEGIN
         SELECT count(*) INTO nb FROM Ligne_Prescription WHERE idPresc=p_idPresc ;
@@ -890,6 +892,7 @@ IS
     EXCEPTION
         WHEN ex_introuvable THEN
             DBMS_OUTPUT.PUT_LINE('Prescription '||p_idPresc||' n existe pas');
+            RETURN 0;
         WHEN NO_DATA_FOUND THEN
             DBMS_OUTPUT.PUT_LINE('La ligne prescription '||p_idPresc||' est introuvable');
             RETURN 0;
