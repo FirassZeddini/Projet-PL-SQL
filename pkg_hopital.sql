@@ -439,7 +439,7 @@ PROCEDURE ajouter_medecin (
         END LOOP;
         CLOSE cur_rdv;
         IF r_count=0 THEN
-            DBMS_OUTPUT.PUT_LINE('Aucun rendez-vous trouve pour ce médecin.');
+            DBMS_OUTPUT.PUT_LINE('Aucun rendez-vous trouve pour ce medecin.');
         END IF;
     EXCEPTION
         WHEN OTHERS THEN 
@@ -482,7 +482,7 @@ PROCEDURE ajouter_rendezVous(
             DBMS_OUTPUT.PUT_LINE('Rendez-Vous ajoute avec succcees');
         EXCEPTION
             WHEN ex_rdv_existe THEN
-                DBMS_OUTPUT.PUT_LINE('Le rendez_vous '||id_rdv||' deja existant');
+                DBMS_OUTPUT.PUT_LINE('Le rendez_vous '||id_rdv||' existe deja');
             WHEN ex_patient_introuvable THEN
                 DBMS_OUTPUT.PUT_LINE('Le patient '||id_patient||' est introuvable');
             WHEN ex_medecin_introuvable THEN
@@ -726,7 +726,7 @@ BEGIN
     FOR rec IN cur LOOP
     DBMS_OUTPUT.PUT_LINE('============Hospitalisation=============');
         compteur:=compteur+1;
-        DBMS_OUTPUT.PUT_LINE('N°'||compteur||': Nom patient: '||rec.nom|| '-Prenom patient: '||rec.prenom||'-Nom service: '||rec.nomService||-'Duree de sejour: '||rec.duree||' jours');
+        DBMS_OUTPUT.PUT_LINE('N '||compteur||': Nom patient: '||rec.nom|| '-Prenom patient: '||rec.prenom||'-Nom service: '||rec.nomService||'-Duree de sejour: '||rec.duree||' jours');
     END LOOP;
     IF compteur = 0 THEN
         RAISE ex_hosp_vide;
@@ -843,8 +843,10 @@ IS
             RETURN 0;
         WHEN TOO_MANY_ROWS THEN
             DBMS_OUTPUT.PUT_LINE('Erreur : plusieurs lignes ont ete retournees ');
+            RETURN 0;
         WHEN OTHERS THEN
             DBMS_OUTPUT.PUT_LINE('Erreur inattendue '||SQLERRM);
+            RETURN 0;
     END nb_patients_service;
 
 FUNCTION total_medicaments_patient (p_idPatient IN Patient.idPatient%TYPE)  RETURN NUMBER 
@@ -865,8 +867,10 @@ IS
             RETURN 0;
         WHEN TOO_MANY_ROWS THEN 
             DBMS_OUTPUT.PUT_LINE('Erreur : plusieurs lignes ont ete retournees');
+            RETURN 0;
         WHEN OTHERS THEN
             DBMS_OUTPUT.PUT_LINE('Erreur inattendue '||SQLERRM);
+            RETURN 0;
     END total_medicaments_patient;
 
 FUNCTION cout_prescription(p_idPresc IN Ligne_Prescription.idPresc%type) RETURN INTEGER
@@ -891,8 +895,10 @@ IS
             RETURN 0;
         WHEN TOO_MANY_ROWS THEN
             DBMS_OUTPUT.PUT_LINE('Erreur : plusieurs lignes ont ete retournees');
+            RETURN 0;
         WHEN OTHERS THEN
             DBMS_OUTPUT.PUT_LINE('Erreur inattendue: '||SQLERRM);
+            RETURN 0;
     END cout_prescription;
 
 END pkg_hopital;
@@ -913,13 +919,13 @@ FOR EACH ROW
     IF nb>0 THEN
         RAISE_APPLICATION_ERROR(-20010,'Patient hospitalise, suppression interdite');
     END IF;
-    END;
+END trg_patient_del;
 /
 
 -- Trigger before insert rdv
 
 CREATE OR REPLACE TRIGGER trg_before_insert_rdv
-BEFORE INSERT ON RendezVous
+BEFORE INSERT OR UPDATE ON RendezVous
 FOR EACH ROW
 DECLARE
     nb_conflit NUMBER;
@@ -933,7 +939,7 @@ BEGIN
     IF nb_conflit > 0 THEN
         RAISE_APPLICATION_ERROR(-20001,'Conflit : Le medecin '||:NEW.idMedecin||' a deja un rendez-vous a cette date.');
     END IF;
-END;
+END trg_before_insert_rdv;
 /
 
 -- Trigger before insert hospitalisation
@@ -950,7 +956,7 @@ BEGIN
     SELECT capacite INTO v_capacite FROM Service WHERE idService=:NEW.idService;
     -- nbre actuel de patients dans ce service
     p_nb := nb_patients_service(:NEW.idService);
-    IF p_nb > v_capacite THEN
+    IF p_nb >= v_capacite THEN
         RAISE_APPLICATION_ERROR(-20070,'Capacite du service depassee');
     END IF;
     -- double hospitalisation
@@ -960,7 +966,10 @@ BEGIN
     IF nb > 0 THEN
         RAISE_APPLICATION_ERROR(-20060,'Double hospitalisation interdite pour ce patient');
     END IF;
-END;
+    EXCEPTION 
+    WHEN NO_DATA_FOUND THEN
+       RAISE_APPLICATION_ERROR(-20071, 'Service '||:NEW.idService||' inexistant');
+END trg_before_insert_hosp;
 /
 
 -- Trigger after update prescription
@@ -974,7 +983,7 @@ BEGIN
         SET stock=stock-rec.quantite
         WHERE idMed=rec.idMed;
     END LOOP;
-END;
+END trg_after_update_presc;
 /
 
 -- Trigger ddl
@@ -984,7 +993,7 @@ AFTER CREATE OR ALTER OR DROP
 ON SCHEMA
 BEGIN
     DBMS_OUTPUT.PUT_LINE('Une operation DDL detectee: '||ORA_SYSEVENT||' sur l''objet: '||ORA_DICT_OBJ_NAME);
-END;
+END trg_ddl;
 /
 
 -- Trigger d'instance
@@ -992,7 +1001,6 @@ END;
 CREATE OR REPLACE TRIGGER trg_logon_user
 AFTER LOGON ON DATABASE
 BEGIN
-    DBMS_OUTPUT.PUT_LINE('Bienvenue ' || USER ||' - Connexion réussie à la base de données.'
-    );
-END;
+    DBMS_OUTPUT.PUT_LINE('Bienvenue ' || USER ||' - Connexion réussie à la base de données à ' || TO_CHAR(SYSDATE, 'DD/MM/YYYY HH24:MI:SS'));
+END trg_logon_user;
 /
