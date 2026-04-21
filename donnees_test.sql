@@ -9,8 +9,9 @@ DELETE FROM Medicament;
 COMMIT;
 
 
--- INSERT INTO Service VALUES (1, 'Cardiologie', 50);
--- INSERT INTO Service VALUES (2, 'Neurologie', 30);
+INSERT INTO Service VALUES (1, 'Cardiologie', 50);
+INSERT INTO Service VALUES (2, 'Neurologie', 30);
+
 
 -- INSERT INTO Medecin VALUES (1, 'Dr House', 'Generaliste', 5000, 1);
 -- INSERT INTO Medecin VALUES (2, 'Dr Karim', 'Cardiologue', 3000, 1);

@@ -41,6 +41,9 @@ CREATE OR REPLACE PACKAGE pkg_hopital AS
     ex_hosp_vide EXCEPTION;
     ex_capacite_depasse EXCEPTION;
 
+    ex_med EXCEPTION; --medicament
+    ex_statut EXCEPTION;
+
     -- =============== Procédures Patient ===============
 
     PROCEDURE ajouter_patient(id IN patient.idPatient%type,
@@ -120,8 +123,8 @@ CREATE OR REPLACE PACKAGE pkg_hopital AS
     PROCEDURE modifier_medicament(
         idM IN Medicament.idMed%TYPE,
         nomM IN Medicament.nom%TYPE,
-        Stock IN Medicament.stock%TYPE,
-        Prix IN Medicament.prix%TYPE
+        m_Stock IN Medicament.stock%TYPE,
+        m_Prix IN Medicament.prix%TYPE
     );
     PROCEDURE supprimer_medicament (idM IN Medicament.idMed%TYPE);
     
@@ -150,7 +153,7 @@ CREATE OR REPLACE PACKAGE pkg_hopital AS
 
     FUNCTION total_medicaments_patient (p_idPatient IN Patient.idPatient%TYPE)  RETURN NUMBER;
 
-    FUNCTION cout_prescription(p_idPresc IN Ligne_Prescription.idPresc%type) RETURN INTEGER;
+    FUNCTION cout_prescription(p_idPresc IN Ligne_Prescription.idPresc%type) RETURN NUMBER;
 
 END pkg_hopital;
 /
@@ -477,10 +480,16 @@ PROCEDURE ajouter_rendezVous(
                 RAISE ex_date_invalide;
             END IF;
             
+            IF statut_rdv NOT IN ('planifie','annule','termine') THEN
+                RAISE ex_statut;
+            END IF;
+
             INSERT INTO rendezVous VALUES (id_rdv, id_patient, id_medecin, date_rdv, statut_rdv);
             COMMIT;
             DBMS_OUTPUT.PUT_LINE('Rendez-Vous ajoute avec succcees');
         EXCEPTION
+            WHEN ex_statut THEN
+                DBMS_OUTPUT.PUT_LINE('statut invalide');
             WHEN ex_rdv_existe THEN
                 DBMS_OUTPUT.PUT_LINE('Le rendez_vous '||id_rdv||' existe deja');
             WHEN ex_patient_introuvable THEN
@@ -523,6 +532,10 @@ PROCEDURE modifier_rendezVous(
             IF date_rdv<SYSDATE OR date_rdv IS NULL THEN
                 RAISE ex_date_invalide;
             END IF;
+
+            IF statut_rdv NOT IN ('planifie','annule','termine') THEN
+                RAISE ex_statut;
+            END IF;
             
             UPDATE rendezVous SET idPatient=id_patient,
                                   idMedecin=id_medecin,
@@ -533,6 +546,8 @@ PROCEDURE modifier_rendezVous(
             DBMS_OUTPUT.PUT_LINE('Rendez-Vous modifie avec succes');
 
         EXCEPTION
+            WHEN ex_statut THEN
+                DBMS_OUTPUT.PUT_LINE('statut invalide');
             WHEN ex_rdv_introuvable THEN
                 DBMS_OUTPUT.PUT_LINE('Le rendez-vous '||id_rdv||' est introuvable');
             WHEN ex_patient_introuvable THEN
@@ -608,7 +623,7 @@ PROCEDURE ajouter_medicament (
         Prix IN Medicament.prix%TYPE
         ) IS
         BEGIN
-            IF Stock <= 0 THEN
+            IF Stock < 0 THEN
                 RAISE ex_stk;
             END IF;
             IF nomM IS NULL THEN
@@ -639,8 +654,8 @@ PROCEDURE ajouter_medicament (
     PROCEDURE modifier_medicament (
         idM IN Medicament.idMed%TYPE,
         nomM IN Medicament.nom%TYPE,
-        Stock IN Medicament.stock%TYPE,
-        Prix IN Medicament.prix%TYPE
+        m_Stock IN Medicament.stock%TYPE,
+        m_Prix IN Medicament.prix%TYPE
         ) IS
         nb_m NUMBER;
         BEGIN
@@ -648,21 +663,22 @@ PROCEDURE ajouter_medicament (
             IF nb_m = 0 THEN
                 RAISE ex_introuvable;
             END IF;
-            IF Stock <= 0 THEN
+            IF m_Stock < 0 THEN
                 RAISE ex_stk;
             END IF;
             IF nomM IS NULL THEN
                 RAISE ex_null;
             END IF;
-            IF Prix <= 0 THEN
+            IF m_Prix <= 0 THEN
                 RAISE ex_pr;
             END IF;
 
             UPDATE Medicament 
             SET nom=nomM,
-                stock=Stock,
-                prix=Prix
+                stock=m_Stock,
+                prix=m_Prix
                 WHERE idMed=idM;
+
             COMMIT;
             DBMS_OUTPUT.PUT_LINE('Medicament modifie');
 
@@ -762,7 +778,9 @@ BEGIN
     IF nb_patient=0 THEN
         RAISE ex_patient_introuvable;
     END IF;
-
+    IF meds IS NULL OR meds.count=0 THEN
+        RAISE ex_med;
+    END IF;
 
     INSERT INTO Prescription VALUES (id_presc, id_patient, id_medecin, SYSDATE);
     FOR i IN 1..meds.COUNT LOOP
@@ -784,6 +802,8 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('Prescription N: '||id_presc||' enregistree avec succes');
     
 EXCEPTION
+    WHEN ex_med THEN
+        DBMS_OUTPUT.PUT_LINE('Aucun medicament fourni');
     WHEN ex_stock_insuffisant THEN
         ROLLBACK;
         DBMS_OUTPUT.PUT_LINE('Stock insuffisant pour medicament '||id_medic);
@@ -839,15 +859,15 @@ IS
     EXCEPTION
         WHEN ex_introuvable THEN
             DBMS_OUTPUT.PUT_LINE('Service '||p_idService||' n existe pas');
-            RETURN 0;
+            RETURN NULL;
         WHEN NO_DATA_FOUND THEN
             RETURN 0;
         WHEN TOO_MANY_ROWS THEN
             DBMS_OUTPUT.PUT_LINE('Erreur : plusieurs lignes ont ete retournees ');
-            RETURN 0;
+            RETURN NULL;
         WHEN OTHERS THEN
             DBMS_OUTPUT.PUT_LINE('Erreur inattendue '||SQLERRM);
-            RETURN 0;
+            RETURN NULL;
     END nb_patients_service;
 
 FUNCTION total_medicaments_patient (p_idPatient IN Patient.idPatient%TYPE)  RETURN NUMBER 
@@ -859,32 +879,32 @@ IS
         IF nb = 0 THEN
             RAISE ex_introuvable;
         END IF;
-        SELECT SUM(lp.quantite) INTO nb_med FROM Prescription p INNER JOIN Ligne_Prescription lp on p.idPresc=lp.idPresc WHERE p.idPatient=p_idPatient;
+        SELECT NVL(SUM(lp.quantite),0) INTO nb_med FROM Prescription p INNER JOIN Ligne_Prescription lp on p.idPresc=lp.idPresc WHERE p.idPatient=p_idPatient;
         RETURN nb_med;
     EXCEPTION
         WHEN ex_introuvable THEN
             DBMS_OUTPUT.PUT_LINE('Patient '||p_idPatient||' n existe pas');
-            RETURN 0;
+            RETURN NULL;
         WHEN NO_DATA_FOUND THEN
             RETURN 0;
         WHEN TOO_MANY_ROWS THEN 
             DBMS_OUTPUT.PUT_LINE('Erreur : plusieurs lignes ont ete retournees');
-            RETURN 0;
+            RETURN NULL;
         WHEN OTHERS THEN
             DBMS_OUTPUT.PUT_LINE('Erreur inattendue '||SQLERRM);
-            RETURN 0;
+            RETURN NULL;
     END total_medicaments_patient;
 
-FUNCTION cout_prescription(p_idPresc IN Ligne_Prescription.idPresc%type) RETURN INTEGER
+FUNCTION cout_prescription(p_idPresc IN Ligne_Prescription.idPresc%type) RETURN NUMBER
 IS
-    cout INTEGER:=0;
+    cout NUMBER:=0;
     nb  NUMBER :=0;
     BEGIN
         SELECT count(*) INTO nb FROM Ligne_Prescription WHERE idPresc=p_idPresc ;
         IF nb = 0 THEN
             RAISE ex_introuvable;
         END IF;    
-        SELECT SUM(m.prix*l.quantite) INTO cout FROM Ligne_Prescription l
+        SELECT NVL(SUM(m.prix*l.quantite),0) INTO cout FROM Ligne_Prescription l
         JOIN Medicament m ON l.idMed=m.idMed
         WHERE l.idPresc=p_idPresc;
         RETURN cout;
@@ -892,16 +912,16 @@ IS
     EXCEPTION
         WHEN ex_introuvable THEN
             DBMS_OUTPUT.PUT_LINE('Prescription '||p_idPresc||' n existe pas');
-            RETURN 0;
+            RETURN NULL;
         WHEN NO_DATA_FOUND THEN
             DBMS_OUTPUT.PUT_LINE('La ligne prescription '||p_idPresc||' est introuvable');
             RETURN 0;
         WHEN TOO_MANY_ROWS THEN
             DBMS_OUTPUT.PUT_LINE('Erreur : plusieurs lignes ont ete retournees');
-            RETURN 0;
+            RETURN NULL;
         WHEN OTHERS THEN
             DBMS_OUTPUT.PUT_LINE('Erreur inattendue: '||SQLERRM);
-            RETURN 0;
+            RETURN NULL;
     END cout_prescription;
 
 END pkg_hopital;
@@ -936,6 +956,7 @@ BEGIN
     SELECT COUNT(*) INTO nb_conflit
     FROM RendezVous
     WHERE idMedecin = :NEW.idMedecin
+    AND idRdv!=:NEW.idRdv
     AND (ABS(dateRdv-:NEW.dateRdv)*24*60)<30
     AND statut != 'annule';
 
@@ -958,14 +979,14 @@ BEGIN
     --capacite de service
     SELECT capacite INTO v_capacite FROM Service WHERE idService=:NEW.idService;
     -- nbre actuel de patients dans ce service
-    p_nb := nb_patients_service(:NEW.idService);
+    p_nb := pkg_hopital.nb_patients_service(:NEW.idService);
     IF p_nb >= v_capacite THEN
         RAISE_APPLICATION_ERROR(-20070,'Capacite du service depassee');
     END IF;
     -- double hospitalisation
     SELECT COUNT(*) INTO nb FROM Hospitalisation WHERE idPatient=:NEW.idPatient AND (
-            (:NEW.dateEntree BETWEEN dateEntree AND dateSortie)
-         OR (:NEW.dateSortie BETWEEN dateEntree AND dateSortie));
+            (:NEW.dateEntree BETWEEN dateEntree AND NVL(dateSortie, SYSDATE))
+        OR  (:NEW.dateSortie BETWEEN dateEntree AND NVL(dateSortie, SYSDATE)));
     IF nb > 0 THEN
         RAISE_APPLICATION_ERROR(-20060,'Double hospitalisation interdite pour ce patient');
     END IF;
@@ -978,7 +999,7 @@ END trg_before_insert_hosp;
 -- Trigger after update prescription
 
 CREATE OR REPLACE TRIGGER trg_after_update_presc
-AFTER INSERT OR UPDATE ON Prescription
+AFTER UPDATE ON Prescription
 FOR EACH ROW
 BEGIN
     FOR rec IN (SELECT idMed,quantite FROM Ligne_Prescription WHERE idPresc=:NEW.idPresc) LOOP

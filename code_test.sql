@@ -147,18 +147,17 @@ EXEC pkg_hopital.afficher_medicament(1);
 EXEC pkg_hopital.afficher_medicament(999);
 
 -- Modifier medicament
-EXEC pkg_hopital.modifier_medicament(1, 'Paracetamol 500mg', 200, 3.0);
+EXEC pkg_hopital.modifier_medicament(1, 'Paracetamol 500mg', 1, 3.0);
 
 -- Modifier medicament inexistant
 EXEC pkg_hopital.modifier_medicament(999, 'X', 10, 1.0);
-
--- Supprimer medicament
-EXEC pkg_hopital.supprimer_medicament(3);
 
 -- Supprimer medicament inexistant
 EXEC pkg_hopital.supprimer_medicament(999);
 
 -- ==================== TEST LISTE HOSPITALISATIONS ====================
+INSERT INTO Hospitalisation
+VALUES (1, 1, 1, DATE '2026-04-10', DATE '2026-04-15');
 
 EXEC pkg_hopital.liste_hospitalisations;
 
@@ -166,40 +165,55 @@ EXEC pkg_hopital.liste_hospitalisations;
 
 EXEC pkg_hopital.medicaments_rupture;
 
+-- Supprimer medicament
+EXEC pkg_hopital.supprimer_medicament(3);
+
 -- ==================== TEST FONCTIONS ====================
-
--- Nombre de patients dans un service
-BEGIN
-    DBMS_OUTPUT.PUT_LINE('Patients dans service 1: ' || pkg_hopital.nb_patients_service(1));
-    DBMS_OUTPUT.PUT_LINE('Patients dans service 999: ' || pkg_hopital.nb_patients_service(999));
-END;
-/
-
--- Total medicaments prescrits a un patient
-BEGIN
-    DBMS_OUTPUT.PUT_LINE('Total medicaments patient 1: ' || pkg_hopital.total_medicaments_patient(1));
-    DBMS_OUTPUT.PUT_LINE('Total medicaments patient 999: ' || pkg_hopital.total_medicaments_patient(999));
-END;
-/
-
--- Cout d'une prescription
-BEGIN
-    DBMS_OUTPUT.PUT_LINE('Cout prescription 1: ' || pkg_hopital.cout_prescription(1));
-    DBMS_OUTPUT.PUT_LINE('Cout prescription 999: ' || pkg_hopital.cout_prescription(999));
-END;
-/
-
+EXEC pkg_hopital.afficher_patient(1);
 -- ==================== TEST PRESCRIRE MEDICAMENT ====================
 
 DECLARE
     v_meds tab_meds := tab_meds(
-        rec_med(1, 5),   -- Paracetamol 500mg, quantite 5
+        rec_med(1, 1),   -- Paracetamol 500mg, quantite 5
         rec_med(2, 3)    -- Amoxicilline, quantite 3
     );
 BEGIN
     pkg_hopital.prescrire_medicament(1, 1, 1, v_meds);
 END;
 /
+-- Nombre de patients dans un service
+BEGIN
+    IF pkg_hopital.nb_patients_service(1) IS NOT NULL THEN
+    DBMS_OUTPUT.PUT_LINE('Patients dans service 1: ' || pkg_hopital.nb_patients_service(1));
+    END IF;
+    IF pkg_hopital.nb_patients_service(999) IS NOT NULL THEN
+    DBMS_OUTPUT.PUT_LINE('Patients dans service 999: ' || pkg_hopital.nb_patients_service(999));
+    END IF;
+END;
+/
+
+-- Total medicaments prescrits a un patient
+BEGIN
+    IF pkg_hopital.total_medicaments_patient(1) IS NOT NULL THEN
+    DBMS_OUTPUT.PUT_LINE('Total medicaments patient 1: ' || pkg_hopital.total_medicaments_patient(1));
+    END IF;
+    IF pkg_hopital.total_medicaments_patient(999) IS NOT NULL THEN
+    DBMS_OUTPUT.PUT_LINE('Total medicaments patient 999: ' || pkg_hopital.total_medicaments_patient(999));
+    END IF;
+END;
+/
+
+-- Cout d'une prescription
+BEGIN
+    IF pkg_hopital.cout_prescription(1) IS NOT NULL THEN
+    DBMS_OUTPUT.PUT_LINE('Cout prescription 1: ' || pkg_hopital.cout_prescription(1));
+    END IF;
+    IF pkg_hopital.cout_prescription(999) IS NOT NULL THEN
+    DBMS_OUTPUT.PUT_LINE('Cout prescription 999: ' || pkg_hopital.cout_prescription(999));
+    END IF;
+END;
+/
+
 
 -- Tester stock insuffisant
 DECLARE
