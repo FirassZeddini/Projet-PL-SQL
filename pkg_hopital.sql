@@ -948,7 +948,7 @@ END trg_patient_del;
 -- Trigger before insert rdv
 
 CREATE OR REPLACE TRIGGER trg_before_insert_rdv
-BEFORE INSERT OR UPDATE ON RendezVous
+BEFORE INSERT ON RendezVous
 FOR EACH ROW
 DECLARE
     nb_conflit NUMBER;
